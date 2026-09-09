@@ -1,0 +1,86 @@
+name: Build Android from ZIP
+
+on:
+  push:
+    paths:
+      - "*.zip"
+      - "**/*.zip"
+      - ".github/workflows/android-zip-builder.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Find uploaded ZIP
+        id: zip
+        shell: bash
+        run: |
+          set -e
+          ZIP="$(find . -type f -name '*.zip' -not -path './.git/*' | head -n 1)"
+          if [ -z "$ZIP" ]; then
+            echo "No ZIP file found in the repository."
+            exit 1
+          fi
+          echo "Using: $ZIP"
+          echo "path=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Extract ZIP
+        shell: bash
+        run: |
+          set -e
+          rm -rf build-source
+          mkdir -p build-source
+          unzip -q "${{ steps.zip.outputs.path }}" -d build-source
+
+      - name: Locate Capacitor project
+        id: project
+        shell: bash
+        run: |
+          set -e
+          PKG="$(find build-source -type f -name package.json | head -n 1)"
+          if [ -z "$PKG" ]; then
+            echo "package.json was not found inside the uploaded ZIP."
+            echo "The ZIP must contain the TahaAi Visualizer Capacitor project."
+            exit 1
+          fi
+          DIR="$(dirname "$PKG")"
+          echo "Project: $DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ steps.project.outputs.dir }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: npm install
+
+      - name: Add Android platform
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: npx cap sync android
+
+      - name: Build Debug APK
+        working-directory: ${{ steps.project.outputs.dir }}/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: TahaAi-Visualizer-Android
+          path: ${{ steps.project.outputs.dir }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
