@@ -21,6 +21,9 @@ input[type=range]{padding:0;width:100%;accent-color:var(--accent)}input[type=col
 .small{font-size:12px;color:var(--muted);line-height:1.45}.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.mode-grid button{min-width:0;padding:9px 6px;font-size:12px}
 .hidden{display:none!important}.playlist{position:absolute;left:24px;top:86px;width:360px;max-height:calc(100vh - 190px);overflow:auto;padding:16px;border:1px solid #302d46;border-radius:18px;background:var(--panel);z-index:5;display:none}.playlist.open{display:block}.playlist h2{margin:0 0 10px;font-size:16px}.track{display:flex;align-items:center;gap:8px;padding:9px;border-radius:10px;cursor:pointer}.track:hover,.track.active{background:#252238}.track .num{width:24px;color:var(--muted);font-size:12px}.track .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;font-size:13px}.track .dur{font-size:11px;color:var(--muted)}.playlist-actions{display:flex;gap:8px;margin-bottom:10px}.playlist-actions button{flex:1}.file-label{display:block;text-align:center;padding:10px 14px;border:1px dashed #4a4664;border-radius:10px;cursor:pointer;font-size:13px}
 @media(max-width:1100px){.controls{left:14px;right:14px}.panel{right:14px;width:330px}.top{padding:14px 18px}}
+
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.panel-head h2{margin:0}.panel-close{width:40px;height:40px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;font-size:24px;line-height:1;cursor:pointer}.panel-close:active{transform:scale(.96)}
+@media(max-width:768px){.panel.mobile-settings-open{display:block!important;z-index:80}.panel.mobile-settings-open .panel-close{display:flex;align-items:center;justify-content:center;flex:none}.panel.mobile-settings-open{position:fixed;inset:12px;overflow:auto;border-radius:24px;padding:20px;backdrop-filter:blur(24px)}}
 </style>
 
 <style id="mobile-responsive">
@@ -493,7 +496,7 @@ body.visualizer-only .visualizer-exit{display:flex!important}
 <div class="top"><div><div class="brand">TAHA<span style="color:var(--accent)">AI</span> VISUALIZER</div><div class="status" id="source">DEMO MODE • TV EDITION</div></div><div class="status"><span class="dot"></span><span id="fps">60 FPS</span></div></div>
 <div class="playlist" id="playlist"><h2>Music Playlist</h2><div class="playlist-actions"><label class="file-label" for="files">＋ Add Songs</label><input id="files" class="hidden" type="file" accept="audio/*" multiple></div><div id="trackList"><div class="small">No songs selected. Choose multiple audio files to create a playlist.</div></div></div>
 <div class="panel" id="panel">
-<h2>TV Settings</h2>
+<div class="panel-head"><h2>TV Settings</h2><button id="closeSettings" class="panel-close" aria-label="Close settings">×</button></div>
 <div class="row"><label>Mode</label><select id="mode"></select></div>
 <div class="row"><label>Accent</label><input id="accent" type="color" value="#a995ff"></div>
 <div class="row"><label>Background</label><select id="bg"><option value="solid">Solid</option><option value="gradient">Gradient</option></select></div>
@@ -564,7 +567,8 @@ audio.onended=()=>{updateMediaSession();if(playlist.length){const next=(trackInd
 audio.onplay=()=>{updateMediaSession();ensureAnalyser();if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume();playing=true;$("play").textContent="❚❚ Pause"}
 audio.onpause=()=>{updateMediaSession();playing=false;$("play").textContent="▶ Play"}
 $("playlistBtn").onclick=()=>$("playlist").classList.toggle("open");
-$("settings").onclick=()=> $("panel").classList.toggle("open");
+$("settings").onclick=()=>{$("panel").classList.toggle("open");$("panel").classList.toggle("mobile-settings-open");};
+$("closeSettings").onclick=()=>{$("panel").classList.remove("open");$("panel").classList.remove("mobile-settings-open");};
 $("mode").onchange=e=>setMode(e.target.value);$("accent").oninput=e=>setAccent(e.target.value);
 $("bg").onchange=e=>cfg.bg=e.target.value;$("mirror").onchange=e=>cfg.mirror=e.target.value;
 $("sens").oninput=e=>cfg.sens=+e.target.value;$("smooth").oninput=e=>cfg.smooth=+e.target.value;$("count").oninput=e=>cfg.count=+e.target.value;$("glow").oninput=e=>cfg.glow=+e.target.value;$("opacity").oninput=e=>cfg.opacity=+e.target.value;$("fpsSel").onchange=e=>cfg.fps=+e.target.value;
@@ -575,7 +579,7 @@ $("demoBtn").onclick=()=>{audio.pause();audio.removeAttribute("src");audio.load(
 $("play").onclick=()=>{if(!playlist.length){playing=!playing;$("play").textContent=playing?"❚❚ Pause":"▶ Play";return}ensureAnalyser();if(audio.paused){if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume();audio.play().catch(()=>{})}else audio.pause()};
 $("audioBtn").onclick=()=>{let u=prompt("Enter a direct MP3/OGG/WAV URL");if(!u)return;audio.src=u;audio.play().then(()=>{playing=true;$("source").textContent="NETWORK AUDIO";$("play").textContent="❚❚ Pause"}).catch(()=>alert("Could not play this URL. The server must allow media access (CORS)."))};
 $("prev").onclick=()=>{if(playlist.length){loadTrack((trackIndex-1+playlist.length)%playlist.length,true)}else{let i=modes.indexOf(mode);setMode(modes[(i-1+modes.length)%modes.length])}};$("next").onclick=()=>{if(playlist.length){loadTrack((trackIndex+1)%playlist.length,true)}else{let i=modes.indexOf(mode);setMode(modes[(i+1)%modes.length])}};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"||e.key==="Backspace"){$("panel").classList.remove("open")}if(e.key==="ArrowLeft")$("prev").click();if(e.key==="ArrowRight")$("next").click();if(e.key==="Enter"&&document.activeElement===document.body)$("play").click();if(e.key==="s"||e.key==="S")$("settings").click()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"||e.key==="Backspace"){$("panel").classList.remove("open");$("panel").classList.remove("mobile-settings-open")}if(e.key==="ArrowLeft")$("prev").click();if(e.key==="ArrowRight")$("next").click();if(e.key==="Enter"&&document.activeElement===document.body)$("play").click();if(e.key==="s"||e.key==="S")$("settings").click()});
 load();setMode(mode);render();
 
 /* Native media controls integration (Android/iOS where supported) */
@@ -713,7 +717,7 @@ $("mobileFilesBtn").onclick=()=>{stopPhoneAudio();$("files").click();};
 $("mobilePhoneBtn").onclick=()=>{if(phoneAudioActive)stopPhoneAudio();else openAudioSourcePicker();};
 $("mobileChooseAudioBtn").onclick=()=>openAudioSourcePicker();
 $("mobilePlaylistBtn").onclick=()=>{$("mobileSheet").classList.add("open");$("sheetTitle").textContent="Music Playlist";mobileRenderPlaylist();};
-$("mobileSettingsBtn").onclick=()=>{const p=$("panel");p.classList.toggle("open");p.classList.toggle("mobile-settings-open");$("mobileSheet").classList.remove("open");};
+$("mobileSettingsBtn").onclick=()=>{const p=$("panel");p.classList.add("open","mobile-settings-open");$("mobileSheet").classList.remove("open");};
 $("mobileCloseSheet").onclick=()=>$("mobileSheet").classList.remove("open");
 $("mobileDemoBtn").onclick=()=>{$("demoBtn").click();phoneAudioActive=false;phoneAudioUid=-1;phoneAudioAppName="All phone audio";mobileSync();mobileToast("Demo visualizer enabled");};
 $("mobilePrev").onclick=()=>$("prev").click();
