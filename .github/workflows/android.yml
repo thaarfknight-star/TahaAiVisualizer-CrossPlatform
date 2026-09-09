@@ -71,6 +71,18 @@ jobs:
           cp native/android/SystemAudioCapture.java "$PKG_DIR/SystemAudioCapture.java"
           cp native/android/MainActivity.java "$PKG_DIR/MainActivity.java"
 
+      - name: Apply app icon from www/icon.png
+        working-directory: ${{ steps.project.outputs.dir }}
+        shell: bash
+        run: |
+          set -e
+          ICON_SRC="www/icon.png"
+          ICON_DIR="android/app/src/main/res/drawable"
+          mkdir -p "$ICON_DIR"
+          cp "$ICON_SRC" "$ICON_DIR/icon.png"
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's#@mipmap/ic_launcher_round#@drawable/icon#g; s#@mipmap/ic_launcher#@drawable/icon#g' "$MANIFEST"
+
       - name: Sync Capacitor
         working-directory: ${{ steps.project.outputs.dir }}
         run: npx cap sync android
