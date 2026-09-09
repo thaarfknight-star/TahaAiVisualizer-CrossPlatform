@@ -660,7 +660,7 @@ function mobileRenderPlaylist(){
     box.appendChild(row);
   });
 }
-async function startPhoneAudio(uid=-1, appName="All phone audio"){
+async function startPhoneAudio(uid=-1, appName="Device Audio Output"){
   if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android"){
     mobileToast("Phone Audio needs the Android app (Android 10+).");
     return;
@@ -668,9 +668,9 @@ async function startPhoneAudio(uid=-1, appName="All phone audio"){
   try{
     const plugin=Capacitor.Plugins.SystemAudioCapture;
     if(!plugin){mobileToast("Native audio capture is not installed in this build.");return}
-    await plugin.start({uid: Number.isFinite(uid)?uid:-1});
+    await plugin.start({uid:-1});
     phoneAudioUid=Number.isFinite(uid)?uid:-1;
-    phoneAudioAppName=appName||"All phone audio";
+    phoneAudioAppName="Device Audio Output";
     phoneAudioActive=true;
     audio.pause();
     audio.removeAttribute("src");
@@ -684,34 +684,14 @@ async function startPhoneAudio(uid=-1, appName="All phone audio"){
 }
 function openAudioSourcePicker(){
   const box=$("mobileTrackList");
-  $("sheetTitle").textContent="Choose audio source";
+  $("sheetTitle").textContent="Phone Audio";
   $("mobileSheet").classList.add("open");
-  box.innerHTML='<div class="mobile-track" id="captureAllAudio"><span class="mnum">◉</span><span class="mname">All phone audio</span><span class="mdur">System</span></div><div class="small" style="padding:10px 8px">Or choose one installed app. The app must allow Android playback capture.</div><div id="audioAppsLoading" class="small" style="padding:18px">Loading apps…</div>';
-  $("captureAllAudio").onclick=()=>startPhoneAudio(-1,"All phone audio");
-  const plugin=window.Capacitor?.Plugins?.SystemAudioCapture;
-  if(!plugin){$("audioAppsLoading").textContent="Android audio capture is not installed.";return;}
-  plugin.listApps().then(result=>{
-    const apps=Array.isArray(result?.apps)?result.apps:[];
-    const loading=$("audioAppsLoading");
-    if(loading) loading.remove();
-    if(!apps.length){box.insertAdjacentHTML("beforeend",'<div class="small" style="padding:18px">No launchable apps were found.</div>');return}
-    apps.forEach(app=>{
-      const row=document.createElement("div");
-      row.className="mobile-track";
-      row.innerHTML='<span class="mnum">◉</span><span class="mname"></span><span class="mdur">App</span>';
-      row.querySelector(".mname").textContent=app.label||app.package||"App";
-      row.onclick=()=>startPhoneAudio(Number(app.uid),app.label||app.package||"Selected app");
-      box.appendChild(row);
-    });
-  }).catch(e=>{
-    console.warn(e);
-    const loading=$("audioAppsLoading");
-    if(loading) loading.textContent="Could not load installed apps.";
-  });
+  box.innerHTML='<div class="mobile-track active" id="captureAllAudio"><span class="mnum">◉</span><span class="mname">Device Audio Output</span><span class="mdur">System</span></div><div class="small" style="padding:14px 8px;line-height:1.55">Visualizer listens to Android playback audio from the device output. No microphone and no app selection. Start playback in Spotify, a game, browser, etc., then return here.</div>';
+  $("captureAllAudio").onclick=()=>startPhoneAudio(-1,"Device Audio Output");
 }
 async function stopPhoneAudio(){
   try{await Capacitor.Plugins.SystemAudioCapture?.stop()}catch(_){}
-  phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); phoneAudioUid=-1; phoneAudioAppName="All phone audio"; playing=false; $("play").textContent="▶ Play"; mobileSync();
+  phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); phoneAudioUid=-1; phoneAudioAppName="Device Audio Output"; playing=false; $("play").textContent="▶ Play"; mobileSync();
 }
 function setupMobileNativeAudio(){
   if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android") return;
