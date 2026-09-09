@@ -681,7 +681,7 @@ async function startPhoneAudio(uid=-1, appName="Device Audio Output"){
     audio.load();
     playing=true;
     $("source").textContent="PHONE AUDIO • "+phoneAudioAppName.toUpperCase();
-    mobileToast("Capturing device playback);
+    mobileToast("Capturing device playback");
     $("mobileSheet").classList.remove("open");
     mobileSync();
   }catch(e){console.error(e);mobileToast("Device Playback could not start. The source app may block capture.");}
