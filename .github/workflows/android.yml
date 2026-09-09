@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: npm
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
