@@ -45,3 +45,20 @@ The web app now also exposes Media Session controls when the platform/WebView su
 
 ## Build fix
 The GitHub Actions workflow does not require an existing `package-lock.json` for Node setup. It installs dependencies first, so uploading this project without a lockfile no longer causes the `Dependencies lock file is not found` failure.
+
+## Android build workflow fix
+The Android workflow now:
+- does not require `package-lock.json`
+- installs with `npm install --no-package-lock --legacy-peer-deps`
+- finds the Capacitor project automatically
+- installs Java 21
+- only runs `cap add android` when the Android folder does not already exist
+- builds with Gradle stack traces enabled
+
+### Latest Android build fix
+TypeScript is now included because `capacitor.config.ts` requires it when Capacitor initializes the project.
+
+## Android Phone Audio
+The Android build includes a native `SystemAudioCapture` Capacitor plugin. On Android 10+ it requests Android's MediaProjection consent and captures eligible device playback audio (`MEDIA`/`GAME`) for the visualizer. Some apps can block playback capture, and protected/DRM audio cannot be captured. This is device/app-policy dependent.
+
+The mobile UI provides separate **Music Files** and **Phone Audio** sources.
