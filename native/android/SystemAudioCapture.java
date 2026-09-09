@@ -22,6 +22,7 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.ArrayList;
+import org.json.JSONException;
 
 @CapacitorPlugin(name = "SystemAudioCapture")
 public class SystemAudioCapture extends Plugin {
@@ -137,13 +138,22 @@ public class SystemAudioCapture extends Plugin {
                     if (mag > peak) peak = mag;
                 }
                 double v = Math.min(1.0, Math.sqrt(peak) * 3.2);
-                arr.put(v);
+                try {
+                    arr.put(v);
+                } catch (JSONException e) {
+                    // Skip this frame if the JSON array cannot be populated.
+                    continue;
+                }
             }
 
             double rms = Math.sqrt(sum / Math.max(1, read));
             JSObject data = new JSObject();
-            data.put("rms", Math.min(1.0, rms * 4.0));
-            data.put("bands", arr);
+            try {
+                data.put("rms", Math.min(1.0, rms * 4.0));
+                data.put("bands", arr);
+            } catch (JSONException e) {
+                continue;
+            }
             main.post(() -> notifyListeners("audioLevel", data));
         }
     }
