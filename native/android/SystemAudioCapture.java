@@ -40,6 +40,7 @@ public class SystemAudioCapture extends Plugin {
     private Thread worker;
     private volatile boolean running = false;
     private final Handler main = new Handler(Looper.getMainLooper());
+    private final MediaProjection.Callback projectionCallback = new MediaProjection.Callback() { @Override public void onStop() { stopInternal(); main.post(() -> notifyListeners("captureStopped", new JSObject())); } };
 
     @PluginMethod
     public void start(PluginCall call) {
@@ -123,6 +124,8 @@ public class SystemAudioCapture extends Plugin {
             MediaProjectionManager mgr =
                 (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             projection = mgr.getMediaProjection(resultCode, data);
+            if (projection == null) { call.reject("Android did not return a MediaProjection token."); return; }
+            projection.registerCallback(projectionCallback, main);
 
             // Capture the device playback mix exposed by Android's public
             // AudioPlaybackCapture API, rather than targeting one application.
@@ -156,6 +159,7 @@ public class SystemAudioCapture extends Plugin {
                 .build();
 
             recorder.startRecording();
+            if (recorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) { stopInternal(); call.reject("Android could not start the playback capture stream. The source app may block capture."); return; }
             running = true;
             worker = new Thread(this::captureLoop, "TahaAi-SystemAudio");
             worker.start();
@@ -268,6 +272,7 @@ public class SystemAudioCapture extends Plugin {
             recorder = null;
         }
         if (projection != null) {
+            try { projection.unregisterCallback(projectionCallback); } catch (Throwable ignored) {}
             try { projection.stop(); } catch (Throwable ignored) {}
             projection = null;
         }
