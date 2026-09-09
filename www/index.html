@@ -447,7 +447,7 @@ body.visualizer-only .visualizer-exit{display:flex!important}
     <div class="now-info">
       <div class="eyebrow" id="mobileMode">VISUALIZER</div>
       <div class="now-title" id="mobileTrackTitle">No track selected</div>
-      <div class="now-meta" id="mobileTrackMeta">Add music or use Phone Audio</div>
+      <div class="now-meta" id="mobileTrackMeta">Add music or capture Device Playback</div>
     </div>
   </div>
 
@@ -456,7 +456,7 @@ body.visualizer-only .visualizer-exit{display:flex!important}
       <span class="source-icon">♫</span><strong>Music Files</strong><small>Choose songs</small>
     </button>
     <button class="source-card" id="mobilePhoneBtn">
-      <span class="source-icon">◉</span><strong>Phone Audio</strong><small id="phoneAudioStatus">Capture device audio</small>
+      <span class="source-icon">◉</span><strong>Device Playback</strong><small id="phoneAudioStatus">Capture Android playback</small>
     </button>
   </div>
 
@@ -637,11 +637,11 @@ function mobileSync(){
   if(!("mobileTrackTitle" in window)){}
   const t=playlist[trackIndex];
   $("mobileTrackTitle").textContent=t?t.name.replace(/\.[^/.]+$/,""):"No track selected";
-  $("mobileTrackMeta").textContent=t?(formatTime(t.duration)||"Local audio"):(phoneAudioActive?"Capturing phone audio":"Add music or use Phone Audio");
-  $("mobileSource").textContent=phoneAudioActive?"PHONE AUDIO • SYSTEM CAPTURE":(t?"LOCAL AUDIO • PLAYLIST":"Demo mode");
-  $("mobileMode").textContent=phoneAudioActive?"PHONE AUDIO":"VISUALIZER";
-  $("phoneAudioStatus").textContent=phoneAudioActive?phoneAudioAppName:"Choose a source";
-  $("mobileChooseAudioBtn").textContent=phoneAudioActive?"Change audio app":"Choose audio app";
+  $("mobileTrackMeta").textContent=t?(formatTime(t.duration)||"Local audio"):(phoneAudioActive?"Capturing phone audio":"Add music or capture Device Playback");
+  $("mobileSource").textContent=phoneAudioActive?"DEVICE PLAYBACK • SYSTEM CAPTURE":(t?"LOCAL AUDIO • PLAYLIST":"Demo mode");
+  $("mobileMode").textContent=phoneAudioActive?"DEVICE PLAYBACK":"VISUALIZER";
+  $("phoneAudioStatus").textContent=phoneAudioActive?phoneAudioAppName:"Capture Android playback";
+  $("mobileChooseAudioBtn").textContent=phoneAudioActive?"Stop capture":"Capture device audio";
   $("mobilePhoneBtn").classList.toggle("active",phoneAudioActive);
   $("mobileFilesBtn").classList.toggle("active",!phoneAudioActive);
   $("mobilePlay").textContent=playing?"❚❚":"▶";
@@ -666,12 +666,12 @@ function mobileRenderPlaylist(){
 }
 async function startPhoneAudio(uid=-1, appName="Device Audio Output"){
   if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android"){
-    mobileToast("Phone Audio needs the Android app (Android 10+).");
+    mobileToast("Device Playback needs the Android app (Android 10+).");
     return;
   }
   try{
     const plugin=Capacitor.Plugins.SystemAudioCapture;
-    if(!plugin){mobileToast("Native audio capture is not installed in this build.");return}
+    if(!plugin){mobileToast("Device Playback capture is not installed in this build.");return}
     await plugin.start({uid:-1});
     phoneAudioUid=Number.isFinite(uid)?uid:-1;
     phoneAudioAppName="Device Audio Output";
@@ -681,16 +681,16 @@ async function startPhoneAudio(uid=-1, appName="Device Audio Output"){
     audio.load();
     playing=true;
     $("source").textContent="PHONE AUDIO • "+phoneAudioAppName.toUpperCase();
-    mobileToast("Capturing: "+phoneAudioAppName);
+    mobileToast("Capturing device playback);
     $("mobileSheet").classList.remove("open");
     mobileSync();
-  }catch(e){console.error(e);mobileToast("Phone Audio could not start.");}
+  }catch(e){console.error(e);mobileToast("Device Playback could not start. The source app may block capture.");}
 }
 function openAudioSourcePicker(){
   const box=$("mobileTrackList");
   $("sheetTitle").textContent="Phone Audio";
   $("mobileSheet").classList.add("open");
-  box.innerHTML='<div class="mobile-track active" id="captureAllAudio"><span class="mnum">◉</span><span class="mname">Device Audio Output</span><span class="mdur">System</span></div><div class="small" style="padding:14px 8px;line-height:1.55">Visualizer listens to Android playback audio from the device output. No microphone and no app selection. Start playback in Spotify, a game, browser, etc., then return here.</div>';
+  box.innerHTML='<div class="mobile-track active" id="captureAllAudio"><span class="mnum">◉</span><span class="mname">Capture Device Playback</span><span class="mdur">System</span></div><div class="small" style="padding:14px 8px;line-height:1.55">Visualizer listens to Android playback audio from the device output. No microphone and no app selection. Start playback in Spotify, a game, browser, etc., then return here.</div>';
   $("captureAllAudio").onclick=()=>startPhoneAudio(-1,"Device Audio Output");
 }
 async function stopPhoneAudio(){
