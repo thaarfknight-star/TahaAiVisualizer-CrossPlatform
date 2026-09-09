@@ -42,3 +42,6 @@ Recommended path:
 7. Install through TestFlight.
 
 The web app now also exposes Media Session controls when the platform/WebView supports them: Play/Pause, Previous, Next, Seek Forward and Seek Backward. This improves lock-screen/headset controls, but true guaranteed background playback requires native iOS/Android audio-session/service handling and is not promised by a plain WebView.
+
+## Build fix
+The GitHub Actions workflow does not require an existing `package-lock.json` for Node setup. It installs dependencies first, so uploading this project without a lockfile no longer causes the `Dependencies lock file is not found` failure.
