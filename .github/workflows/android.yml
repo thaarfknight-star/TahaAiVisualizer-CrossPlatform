@@ -61,6 +61,16 @@ jobs:
           fi
 
 
+      - name: Add Android audio capture permission
+        working-directory: ${{ steps.project.outputs.dir }}
+        shell: bash
+        run: |
+          set -e
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
+            sed -i '/<manifest[^>]*>/a\    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
+          fi
+
       - name: Install Android native audio capture plugin
         working-directory: ${{ steps.project.outputs.dir }}
         shell: bash
