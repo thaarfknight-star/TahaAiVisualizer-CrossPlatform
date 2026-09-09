@@ -323,9 +323,153 @@ h1, h2, h3, h4, h5, h6 {
 <meta name="apple-mobile-web-app-title" content="TahaAi Visualizer">
 <meta name="format-detection" content="telephone=no">
 
+
+<style id="mobile-native-ui">
+/* Mobile app UI — intentionally independent from the TV dashboard */
+.mobile-app{display:none}
+@media (max-width:768px){
+  body{overflow:hidden!important;background:#08070e}
+  .top,.controls,.playlist,.panel{display:none!important}
+  .mobile-app{display:flex;position:absolute;inset:0;z-index:20;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));pointer-events:none;overflow:hidden}
+  .mobile-app>*{pointer-events:auto}
+  .mobile-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .mobile-brand{display:flex;align-items:center;gap:10px}
+  .mobile-logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#b9a7ff,#7e67ef);color:#100d1d;font-weight:900;box-shadow:0 8px 30px rgba(169,149,255,.22)}
+  .mobile-title{font-size:15px;font-weight:900;letter-spacing:2px}.mobile-title span{color:var(--accent)}
+  .mobile-subtitle{font-size:11px;color:#9b97ac;margin-top:2px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .icon-btn{width:42px;height:42px;min-width:42px!important;border-radius:13px!important;padding:0!important;background:rgba(18,17,28,.78);border:1px solid #302d46;color:#eee}
+  .mobile-now-playing{margin:18px 0 14px;display:flex;align-items:center;gap:14px;padding:15px;border:1px solid rgba(57,53,82,.85);background:rgba(13,12,21,.74);border-radius:22px;backdrop-filter:blur(16px)}
+  .cover-art{width:78px;height:78px;min-width:78px;border-radius:19px;background:radial-gradient(circle at center,#2d244c 0,#14111f 55%,#09080e 100%);display:grid;place-items:center;position:relative;overflow:hidden;box-shadow:inset 0 0 30px rgba(169,149,255,.12),0 10px 35px rgba(0,0,0,.3)}
+  .cover-art span{font-size:30px;color:var(--accent);filter:drop-shadow(0 0 12px var(--accent))}
+  .cover-ring{position:absolute;inset:9px;border:1px solid rgba(169,149,255,.25);border-radius:50%;animation:spin 7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .now-info{min-width:0}.eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--accent);font-weight:800;margin-bottom:5px}
+  .now-title{font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now-meta{font-size:11px;color:#9b97ac;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mobile-source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .source-card{min-width:0!important;min-height:84px!important;text-align:left;padding:13px!important;border-radius:17px!important;background:rgba(15,14,24,.76);border:1px solid #2f2b45;color:#f5f3ff;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center}
+  .source-card.active{border-color:rgba(169,149,255,.8);background:linear-gradient(145deg,rgba(42,35,65,.9),rgba(15,14,24,.82));box-shadow:0 0 0 1px rgba(169,149,255,.1)}
+  .source-icon{grid-row:1/3;width:30px;height:30px;border-radius:10px;background:#242039;display:grid;place-items:center;color:var(--accent)}
+  .source-card strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.source-card small{font-size:10px;color:#9894aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mobile-progress{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:8px;margin-top:15px}
+  .mobile-progress span{font-size:10px;color:#a7a2b5;text-align:center}
+  #mobileSeek{height:26px;min-height:26px!important;margin:0;padding:0!important;background:transparent;border:0!important;box-shadow:none!important;accent-color:var(--accent)}
+  .mobile-transport{display:grid;grid-template-columns:1fr 1.35fr 1fr;align-items:center;gap:14px;margin:4px 38px 0}
+  .mobile-transport button{height:52px;min-width:0!important;border-radius:17px!important;padding:0!important;background:rgba(22,20,33,.8);border:1px solid #302d46}
+  .mobile-transport .big-play{height:62px;border-radius:22px!important;background:var(--accent);color:#0b0912;border-color:var(--accent);font-size:21px;font-weight:900;box-shadow:0 10px 35px rgba(169,149,255,.2)}
+  .mobile-quick-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+  .mobile-quick-row button{min-width:0!important;min-height:44px!important;padding:8px 6px!important;border-radius:14px!important;background:rgba(16,15,25,.76);border:1px solid #2f2b45;color:#ddd9e9;font-size:12px}
+  .mobile-sheet{position:absolute;left:10px;right:10px;bottom:10px;max-height:68vh;transform:translateY(calc(100% + 30px));transition:transform .25s ease;z-index:30;background:rgba(15,14,23,.98);border:1px solid #34304a;border-radius:24px;padding:10px 12px 14px;box-shadow:0 -20px 70px rgba(0,0,0,.45);overflow:hidden}
+  .mobile-sheet.open{transform:translateY(0)}
+  .sheet-handle{width:38px;height:4px;border-radius:10px;background:#4c4860;margin:2px auto 10px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 10px}.sheet-head button{min-width:34px!important;width:34px;height:34px;padding:0!important;border-radius:10px!important}
+  .mobile-track-list{overflow:auto;max-height:calc(68vh - 70px);-webkit-overflow-scrolling:touch}
+  .mobile-track{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:11px 8px;border-radius:13px;min-width:0}
+  .mobile-track.active{background:#242039}.mobile-track .mnum{font-size:11px;color:#8e899f;text-align:center}.mobile-track .mname{min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-track .mdur{font-size:10px;color:#858095}
+  .mobile-toast{position:absolute;left:50%;bottom:94px;transform:translate(-50%,20px);opacity:0;transition:.2s;max-width:calc(100% - 40px);padding:10px 14px;border-radius:13px;background:#211d32;border:1px solid #3a3552;color:#eee;font-size:12px;text-align:center;pointer-events:none!important}
+  .mobile-toast.show{opacity:1;transform:translate(-50%,0)}
+}
+@media(max-width:420px){
+  .mobile-app{padding-left:12px;padding-right:12px}.mobile-now-playing{padding:12px}.cover-art{width:68px;height:68px;min-width:68px}.now-title{font-size:16px}.mobile-transport{margin-left:25px;margin-right:25px}.source-card{min-height:78px!important}
+}
+@media(max-width:360px){
+  .mobile-source-grid{gap:7px}.source-card{padding:10px!important}.mobile-quick-row button span{display:none}.mobile-now-playing{margin-top:12px}.mobile-transport{gap:8px;margin-left:18px;margin-right:18px}
+}
+</style>
+
+
+<style id="mobile-settings-override">
+@media (max-width:768px){
+  .panel.mobile-settings-open{
+    display:block!important;
+    left:10px!important;right:10px!important;top:74px!important;bottom:10px!important;
+    width:auto!important;max-height:none!important;overflow:auto!important;
+    border-radius:24px!important;padding:18px!important;
+    z-index:40!important;
+  }
+  .panel.mobile-settings-open h2{font-size:18px!important}
+  .panel.mobile-settings-open .row{display:grid!important;grid-template-columns:100px 1fr!important;gap:10px!important}
+  .panel.mobile-settings-open .row>button{min-width:0!important}
+  .panel.mobile-settings-open .small{font-size:11px!important}
+}
+</style>
+
+<style id="android-mobile-force">
+/* Force the dedicated mobile UI inside the native Android Capacitor build.
+   This does not affect LG webOS/browser builds. */
+html.native-android body .mobile-app{display:flex!important}
+html.native-android body .top,html.native-android body .controls,html.native-android body .playlist,html.native-android body .panel{display:none!important}
+html.native-android body{overflow:hidden!important}
+</style>
+<script>
+(function(){
+  try {
+    var cap = window.Capacitor;
+    var platform = cap && typeof cap.getPlatform === 'function' ? cap.getPlatform() : '';
+    if (platform === 'android') document.documentElement.classList.add('native-android');
+  } catch(e) {}
+})();
+</script>
 </head>
 <body>
 <div class="app">
+<!-- Mobile-native UI -->
+<div id="mobileApp" class="mobile-app" aria-hidden="true">
+  <div class="mobile-header">
+    <div class="mobile-brand">
+      <div class="mobile-logo">TA</div>
+      <div>
+        <div class="mobile-title">TAHA<span>AI</span></div>
+        <div class="mobile-subtitle" id="mobileSource">Demo mode</div>
+      </div>
+    </div>
+    <button class="icon-btn" id="mobileFullBtn" aria-label="Fullscreen">⛶</button>
+  </div>
+
+  <div class="mobile-now-playing">
+    <div class="cover-art"><div class="cover-ring"></div><span>♫</span></div>
+    <div class="now-info">
+      <div class="eyebrow" id="mobileMode">VISUALIZER</div>
+      <div class="now-title" id="mobileTrackTitle">No track selected</div>
+      <div class="now-meta" id="mobileTrackMeta">Add music or use Phone Audio</div>
+    </div>
+  </div>
+
+  <div class="mobile-source-grid">
+    <button class="source-card active" id="mobileFilesBtn">
+      <span class="source-icon">♫</span><strong>Music Files</strong><small>Choose songs</small>
+    </button>
+    <button class="source-card" id="mobilePhoneBtn">
+      <span class="source-icon">◉</span><strong>Phone Audio</strong><small id="phoneAudioStatus">Capture device audio</small>
+    </button>
+  </div>
+
+  <div class="mobile-progress">
+    <span id="mobileCurrentTime">0:00</span>
+    <input id="mobileSeek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek">
+    <span id="mobileDuration">0:00</span>
+  </div>
+
+  <div class="mobile-transport">
+    <button id="mobilePrev">⏮</button>
+    <button id="mobilePlay" class="big-play">▶</button>
+    <button id="mobileNext">⏭</button>
+  </div>
+
+  <div class="mobile-quick-row">
+    <button id="mobilePlaylistBtn">☷ <span>Playlist</span></button>
+    <button id="mobileSettingsBtn">⚙ <span>Settings</span></button>
+    <button id="mobileDemoBtn">✦ <span>Demo</span></button>
+  </div>
+
+  <div class="mobile-sheet" id="mobileSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><strong id="sheetTitle">Playlist</strong><button id="mobileCloseSheet">×</button></div>
+    <div id="mobileTrackList" class="mobile-track-list"></div>
+  </div>
+
+  <div class="mobile-toast" id="mobileToast"></div>
+</div>
+
 <canvas id="viz"></canvas>
 <div class="top"><div><div class="brand">TAHA<span style="color:var(--accent)">AI</span> VISUALIZER</div><div class="status" id="source">DEMO MODE • TV EDITION</div></div><div class="status"><span class="dot"></span><span id="fps">60 FPS</span></div></div>
 <div class="playlist" id="playlist"><h2>Music Playlist</h2><div class="playlist-actions"><label class="file-label" for="files">＋ Add Songs</label><input id="files" class="hidden" type="file" accept="audio/*" multiple></div><div id="trackList"><div class="small">No songs selected. Choose multiple audio files to create a playlist.</div></div></div>
@@ -365,7 +509,7 @@ function save(){localStorage.tahaaiTV=JSON.stringify(cfg)}
 function load(){try{let x=JSON.parse(localStorage.tahaaiTV);Object.assign(cfg,x)}catch{} sync()}
 function sync(){$("mode").value=mode;$("accent").value=cfg.accent;$("bg").value=cfg.bg;$("mirror").value=cfg.mirror;$("sens").value=cfg.sens;$("smooth").value=cfg.smooth;$("count").value=cfg.count;$("glow").value=cfg.glow;$("opacity").value=cfg.opacity;$("fpsSel").value=cfg.fps;setAccent(cfg.accent)}
 function ensureAnalyser(){if(analyser)return;try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();const src=audioCtx.createMediaElementSource(audio);analyser=audioCtx.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=cfg.smooth;src.connect(analyser);analyser.connect(audioCtx.destination);freqData=new Uint8Array(analyser.frequencyBinCount);timeData=new Uint8Array(analyser.fftSize)}catch(e){analyser=null}}
-function q(i,n){if(analyser&& !audio.paused){analyser.smoothingTimeConstant=cfg.smooth;analyser.getByteFrequencyData(freqData);let idx=Math.floor((i/n)*freqData.length*.85);return Math.min(1,(freqData[idx]/255)*cfg.sens)}let bass=.5+.5*Math.sin(phase*2.3-i*.21);let hi=.5+.5*Math.sin(phase*4.7+i*.47);return Math.min(1,(.07+.55*bass+.28*hi)*cfg.sens)}
+function q(i,n){if(phoneAudioActive){let idx=Math.max(0,Math.min(phoneBands.length-1,Math.floor((i/Math.max(1,n))*phoneBands.length)));return Math.min(1,phoneBands[idx]*cfg.sens)}if(analyser&& !audio.paused){analyser.smoothingTimeConstant=cfg.smooth;analyser.getByteFrequencyData(freqData);let idx=Math.floor((i/n)*freqData.length*.85);return Math.min(1,(freqData[idx]/255)*cfg.sens)}let bass=.5+.5*Math.sin(phase*2.3-i*.21);let hi=.5+.5*Math.sin(phase*4.7+i*.47);return Math.min(1,(.07+.55*bass+.28*hi)*cfg.sens)}
 function color(a,t=0){let col=cfg.accent;let r=parseInt(col.slice(1,3),16),g=parseInt(col.slice(3,5),16),b=parseInt(col.slice(5,7),16);return `rgba(${r},${g},${b},${Math.max(0,Math.min(1,a*cfg.opacity))})`}
 function bg(){ctx.fillStyle=cfg.bg==="gradient"?"#08070f":"#09090f";ctx.fillRect(0,0,W,H);if(cfg.bg==="gradient"){let g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);g.addColorStop(0,color(.16));g.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}}
 function line(points,width=2,alpha=1){ctx.lineWidth=width;ctx.lineCap="round";ctx.strokeStyle=color(alpha);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke()}
@@ -450,6 +594,109 @@ function setupMediaSession() {
   });
 }
 setupMediaSession();
+
+
+/* =========================================================
+   Mobile controller + Android internal audio bridge
+   ========================================================= */
+let phoneAudioActive=false;
+let phoneBands=new Float32Array(64);
+let phoneRms=0;
+
+function mobileToast(msg){
+  const el=$("mobileToast"); if(!el)return;
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(window.__mt); window.__mt=setTimeout(()=>el.classList.remove("show"),2200);
+}
+function mobileSync(){
+  if(!("mobileTrackTitle" in window)){}
+  const t=playlist[trackIndex];
+  $("mobileTrackTitle").textContent=t?t.name.replace(/\.[^/.]+$/,""):"No track selected";
+  $("mobileTrackMeta").textContent=t?(formatTime(t.duration)||"Local audio"):(phoneAudioActive?"Capturing phone audio":"Add music or use Phone Audio");
+  $("mobileSource").textContent=phoneAudioActive?"PHONE AUDIO • SYSTEM CAPTURE":(t?"LOCAL AUDIO • PLAYLIST":"Demo mode");
+  $("mobileMode").textContent=phoneAudioActive?"PHONE AUDIO":"VISUALIZER";
+  $("phoneAudioStatus").textContent=phoneAudioActive?"Capturing device audio":"Capture device audio";
+  $("mobilePhoneBtn").classList.toggle("active",phoneAudioActive);
+  $("mobileFilesBtn").classList.toggle("active",!phoneAudioActive);
+  $("mobilePlay").textContent=playing?"❚❚":"▶";
+  $("mobileCurrentTime").textContent=formatTime(audio.currentTime||0);
+  $("mobileDuration").textContent=formatTime(audio.duration||0);
+  $("mobileSeek").max=isFinite(audio.duration)?audio.duration:100;
+  $("mobileSeek").value=isFinite(audio.duration)?Math.min(audio.currentTime||0,audio.duration):0;
+}
+function mobileRenderPlaylist(){
+  const box=$("mobileTrackList"); if(!box)return;
+  if(!playlist.length){box.innerHTML='<div class="small" style="padding:18px">No songs yet. Tap Music Files to add multiple songs.</div>';return}
+  box.innerHTML="";
+  playlist.forEach((t,i)=>{
+    const row=document.createElement("div");
+    row.className="mobile-track"+(i===trackIndex?" active":"");
+    row.innerHTML='<span class="mnum">'+(i+1)+'</span><span class="mname"></span><span class="mdur"></span>';
+    row.querySelector(".mname").textContent=t.name;
+    row.querySelector(".mdur").textContent=t.duration?formatTime(t.duration):"";
+    row.onclick=()=>loadTrack(i,true);
+    box.appendChild(row);
+  });
+}
+async function startPhoneAudio(){
+  if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android"){
+    mobileToast("Phone Audio needs the Android app (Android 10+).");
+    return;
+  }
+  try{
+    const plugin=Capacitor.Plugins.SystemAudioCapture;
+    if(!plugin){mobileToast("Native audio capture is not installed in this build.");return}
+    await plugin.start();
+    phoneAudioActive=true;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    playing=true;
+    $("source").textContent="PHONE AUDIO • SYSTEM CAPTURE";
+    mobileToast("Choose Share/Allow to capture phone audio.");
+    mobileSync();
+  }catch(e){console.error(e);mobileToast("Phone Audio could not start.");}
+}
+async function stopPhoneAudio(){
+  try{await Capacitor.Plugins.SystemAudioCapture?.stop()}catch(_){}
+  phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); playing=false; $("play").textContent="▶ Play"; mobileSync();
+}
+function setupMobileNativeAudio(){
+  if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android") return;
+  try{
+    const p=Capacitor.Plugins.SystemAudioCapture;
+    if(!p)return;
+    p.addListener("audioLevel", data=>{
+      const b=data.bands||[];
+      for(let i=0;i<phoneBands.length;i++) phoneBands[i]=Math.max(0,Math.min(1,Number(b[i]||0)));
+      phoneRms=Math.max(0,Math.min(1,Number(data.rms||0)));
+      phoneAudioActive=true; playing=true;
+    });
+    p.addListener("captureStopped", ()=>{
+      phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); mobileSync();
+    });
+  }catch(e){console.warn("SystemAudioCapture listener unavailable",e)}
+}
+$("mobileFilesBtn").onclick=()=>{stopPhoneAudio();$("files").click();};
+$("mobilePhoneBtn").onclick=()=>{if(phoneAudioActive)stopPhoneAudio();else startPhoneAudio();};
+$("mobilePlaylistBtn").onclick=()=>{$("mobileSheet").classList.add("open");$("sheetTitle").textContent="Music Playlist";mobileRenderPlaylist();};
+$("mobileSettingsBtn").onclick=()=>{const p=$("panel");p.classList.toggle("open");p.classList.toggle("mobile-settings-open");$("mobileSheet").classList.remove("open");};
+$("mobileCloseSheet").onclick=()=>$("mobileSheet").classList.remove("open");
+$("mobileDemoBtn").onclick=()=>{$("demoBtn").click();phoneAudioActive=false;mobileSync();mobileToast("Demo visualizer enabled");};
+$("mobilePrev").onclick=()=>$("prev").click();
+$("mobileNext").onclick=()=>$("next").click();
+$("mobilePlay").onclick=()=>{$("play").click();setTimeout(mobileSync,80)};
+$("mobileFullBtn").onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}};
+$("mobileSeek").oninput=e=>{if(isFinite(audio.duration))audio.currentTime=+e.target.value};
+audio.addEventListener("timeupdate",mobileSync);
+audio.addEventListener("loadedmetadata",mobileSync);
+setInterval(mobileSync,500);
+const _oldRenderPlaylist=renderPlaylist;
+renderPlaylist=function(){_oldRenderPlaylist();mobileRenderPlaylist();mobileSync()};
+const _oldLoadTrack=loadTrack;
+loadTrack=function(i,autoplay=false){stopPhoneAudio();_oldLoadTrack(i,autoplay);setTimeout(mobileSync,100)};
+setupMobileNativeAudio();
+mobileSync();
 
 </script>
 </body></html>
