@@ -3,6 +3,9 @@ package com.tahdigi.visualizer;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioPlaybackCaptureConfiguration;
@@ -20,10 +23,16 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import java.util.ArrayList;
+import java.util.List;
 
-@CapacitorPlugin(name = "SystemAudioCapture")
+@CapacitorPlugin(
+    name = "SystemAudioCapture",
+    permissions = { @Permission(strings = { android.Manifest.permission.RECORD_AUDIO }, alias = "recordAudio") }
+)
 public class SystemAudioCapture extends Plugin {
     private static final int REQUEST_CAPTURE = 4107;
     private AudioRecord recorder;
@@ -42,6 +51,23 @@ public class SystemAudioCapture extends Plugin {
             call.resolve();
             return;
         }
+        if (!hasRequiredPermissions()) {
+            requestAllPermissions(call, "permissionResult");
+            return;
+        }
+        beginProjection(call);
+    }
+
+    @PermissionCallback
+    private void permissionResult(PluginCall call) {
+        if (!hasRequiredPermissions()) {
+            call.reject("Microphone permission is required by Android for playback capture.");
+            return;
+        }
+        beginProjection(call);
+    }
+
+    private void beginProjection(PluginCall call) {
         MediaProjectionManager mgr =
             (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
         if (mgr == null) {
@@ -50,6 +76,41 @@ public class SystemAudioCapture extends Plugin {
         }
         saveCall(call);
         startActivityForResult(call, mgr.createScreenCaptureIntent(), "captureResult");
+    }
+
+    @PluginMethod
+    public void listApps(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.reject("App audio selection requires Android 10 or newer.");
+            return;
+        }
+        try {
+            PackageManager pm = getContext().getPackageManager();
+            Intent launcher = new Intent(Intent.ACTION_MAIN, null);
+            launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+            List<ResolveInfo> infos = pm.queryIntentActivities(launcher, PackageManager.MATCH_ALL);
+            ArrayList<JSObject> apps = new ArrayList<>();
+            String ownPackage = getContext().getPackageName();
+            for (ResolveInfo info : infos) {
+                if (info.activityInfo == null || info.activityInfo.applicationInfo == null) continue;
+                ApplicationInfo ai = info.activityInfo.applicationInfo;
+                String pkg = ai.packageName;
+                if (pkg == null || pkg.equals(ownPackage)) continue;
+                CharSequence labelCs = pm.getApplicationLabel(ai);
+                String label = labelCs != null ? labelCs.toString() : pkg;
+                JSObject item = new JSObject();
+                item.put("label", label);
+                item.put("package", pkg);
+                item.put("uid", ai.uid);
+                apps.add(item);
+            }
+            apps.sort((a, b) -> a.getString("label", "").compareToIgnoreCase(b.getString("label", "")));
+            JSObject result = new JSObject();
+            result.put("apps", JSArray.from(apps));
+            call.resolve(result);
+        } catch (Throwable t) {
+            call.reject("Could not list installed apps: " + t.getMessage());
+        }
     }
 
     @ActivityCallback
@@ -63,11 +124,17 @@ public class SystemAudioCapture extends Plugin {
                 (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             projection = mgr.getMediaProjection(resultCode, data);
 
-            AudioPlaybackCaptureConfiguration config =
-                new AudioPlaybackCaptureConfiguration.Builder(projection)
+            Integer selectedUid = call.getData().getInteger("uid", -1);
+            AudioPlaybackCaptureConfiguration.Builder captureBuilder =
+                new AudioPlaybackCaptureConfiguration.Builder(projection);
+            if (selectedUid != null && selectedUid > 0) {
+                captureBuilder.addMatchingUid(selectedUid);
+            } else {
+                captureBuilder
                     .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
-                    .addMatchingUsage(AudioAttributes.USAGE_GAME)
-                    .build();
+                    .addMatchingUsage(AudioAttributes.USAGE_GAME);
+            }
+            AudioPlaybackCaptureConfiguration config = captureBuilder.build();
 
             int sampleRate = 48000;
             AudioFormat format = new AudioFormat.Builder()
