@@ -400,6 +400,16 @@ html.native-android body .mobile-app{display:flex!important}
 html.native-android body .top,html.native-android body .controls,html.native-android body .playlist,html.native-android body .panel{display:none!important}
 html.native-android body{overflow:hidden!important}
 </style>
+<style id="visualizer-only-mode">
+/* Fullscreen button: show only the visualizer canvas. */
+body.visualizer-only .mobile-app,
+body.visualizer-only .top,
+body.visualizer-only .controls,
+body.visualizer-only .playlist,
+body.visualizer-only .panel { display:none !important; }
+body.visualizer-only #viz { z-index:9999 !important; }
+body.visualizer-only { overflow:hidden !important; }
+</style>
 <script>
 (function(){
   try {
@@ -502,6 +512,10 @@ const $=id=>document.getElementById(id), c=$("viz"), ctx=c.getContext("2d"), aud
 let dpr=Math.min(devicePixelRatio||1,2), W=0,H=0,phase=0,last=performance.now(),mode="spectrum",playing=false;
 let playlist=[], trackIndex=-1, objectUrls=[], audioCtx=null, analyser=null, freqData=null, timeData=null;
 let cfg={accent:"#a995ff",bg:"gradient",mirror:"vertical",sens:1,smooth:.72,count:80,glow:14,opacity:.9,fps:60};
+// Android system-audio state must exist before the first render() call.
+let phoneAudioActive=false;
+let phoneBands=new Float32Array(64);
+let phoneRms=0;
 const modes=MODES.map(x=>x[0]); MODES.forEach(([v,t])=>{let o=document.createElement("option");o.value=v;o.textContent=t;$("mode").appendChild(o)});
 function resize(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener("resize",resize);resize();
 function setAccent(x){document.documentElement.style.setProperty("--accent",x);cfg.accent=x}
@@ -599,10 +613,6 @@ setupMediaSession();
 /* =========================================================
    Mobile controller + Android internal audio bridge
    ========================================================= */
-let phoneAudioActive=false;
-let phoneBands=new Float32Array(64);
-let phoneRms=0;
-
 function mobileToast(msg){
   const el=$("mobileToast"); if(!el)return;
   el.textContent=msg; el.classList.add("show");
@@ -686,7 +696,28 @@ $("mobileDemoBtn").onclick=()=>{$("demoBtn").click();phoneAudioActive=false;mobi
 $("mobilePrev").onclick=()=>$("prev").click();
 $("mobileNext").onclick=()=>$("next").click();
 $("mobilePlay").onclick=()=>{$("play").click();setTimeout(mobileSync,80)};
-$("mobileFullBtn").onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}};
+$("mobileFullBtn").onclick=async()=>{
+  const only=document.body.classList.toggle("visualizer-only");
+  if(only){
+    try{
+      if(document.documentElement.requestFullscreen && !document.fullscreenElement){
+        await document.documentElement.requestFullscreen();
+      }
+    }catch(_){}
+    mobileToast("Visualizer fullscreen • tap Back to return");
+  }else{
+    try{if(document.fullscreenElement && document.exitFullscreen)await document.exitFullscreen()}catch(_){}
+  }
+};
+document.addEventListener("fullscreenchange",()=>{
+  if(!document.fullscreenElement && document.body.classList.contains("visualizer-only")){}
+});
+document.addEventListener("keydown",e=>{
+  if((e.key==="Escape"||e.key==="Backspace") && document.body.classList.contains("visualizer-only")){
+    e.preventDefault(); document.body.classList.remove("visualizer-only");
+    try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}
+  }
+});
 $("mobileSeek").oninput=e=>{if(isFinite(audio.duration))audio.currentTime=+e.target.value};
 audio.addEventListener("timeupdate",mobileSync);
 audio.addEventListener("loadedmetadata",mobileSync);
