@@ -60,6 +60,17 @@ jobs:
             echo "Android platform already exists; skipping cap add."
           fi
 
+
+      - name: Install Android native audio capture plugin
+        working-directory: ${{ steps.project.outputs.dir }}
+        shell: bash
+        run: |
+          set -e
+          PKG_DIR="android/app/src/main/java/com/tahdigi/visualizer"
+          mkdir -p "$PKG_DIR"
+          cp native/android/SystemAudioCapture.java "$PKG_DIR/SystemAudioCapture.java"
+          cp native/android/MainActivity.java "$PKG_DIR/MainActivity.java"
+
       - name: Sync Capacitor
         working-directory: ${{ steps.project.outputs.dir }}
         run: npx cap sync android
