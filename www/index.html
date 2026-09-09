@@ -397,7 +397,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Force the dedicated mobile UI inside the native Android Capacitor build.
    This does not affect LG webOS/browser builds. */
 html.native-android body .mobile-app{display:flex!important}
-html.native-android body .top,html.native-android body .controls,html.native-android body .playlist,html.native-android body .panel{display:none!important}
+html.native-android body .top,html.native-android body .controls,html.native-android body .playlist{display:none!important}
+html.native-android body .panel:not(.mobile-settings-open){display:none!important}
 html.native-android body{overflow:hidden!important}
 </style>
 <style id="visualizer-only-mode">
@@ -409,6 +410,9 @@ body.visualizer-only .playlist,
 body.visualizer-only .panel { display:none !important; }
 body.visualizer-only #viz { z-index:9999 !important; }
 body.visualizer-only { overflow:hidden !important; }
+.visualizer-exit{display:none;position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:10001;width:48px;height:48px;border-radius:15px;border:1px solid rgba(255,255,255,.18);background:rgba(10,9,16,.72);backdrop-filter:blur(14px);color:#fff;font-size:22px;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+body.visualizer-only .visualizer-exit{display:flex!important}
+@media(max-width:768px){.mobile-source-picker{display:flex;gap:8px;margin-top:8px}.mobile-source-picker button{flex:1;min-width:0!important;min-height:40px!important;padding:8px!important;border-radius:12px!important;font-size:11px!important}}
 </style>
 <script>
 (function(){
@@ -453,6 +457,10 @@ body.visualizer-only { overflow:hidden !important; }
     </button>
   </div>
 
+  <div class="mobile-source-picker">
+    <button id="mobileChooseAudioBtn">Choose audio app</button>
+  </div>
+
   <div class="mobile-progress">
     <span id="mobileCurrentTime">0:00</span>
     <input id="mobileSeek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek">
@@ -479,6 +487,7 @@ body.visualizer-only { overflow:hidden !important; }
 
   <div class="mobile-toast" id="mobileToast"></div>
 </div>
+<button id="visualizerExit" class="visualizer-exit" aria-label="Exit fullscreen">×</button>
 
 <canvas id="viz"></canvas>
 <div class="top"><div><div class="brand">TAHA<span style="color:var(--accent)">AI</span> VISUALIZER</div><div class="status" id="source">DEMO MODE • TV EDITION</div></div><div class="status"><span class="dot"></span><span id="fps">60 FPS</span></div></div>
@@ -516,6 +525,8 @@ let cfg={accent:"#a995ff",bg:"gradient",mirror:"vertical",sens:1,smooth:.72,coun
 let phoneAudioActive=false;
 let phoneBands=new Float32Array(64);
 let phoneRms=0;
+let phoneAudioUid=-1;
+let phoneAudioAppName="All phone audio";
 const modes=MODES.map(x=>x[0]); MODES.forEach(([v,t])=>{let o=document.createElement("option");o.value=v;o.textContent=t;$("mode").appendChild(o)});
 function resize(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener("resize",resize);resize();
 function setAccent(x){document.documentElement.style.setProperty("--accent",x);cfg.accent=x}
@@ -625,7 +636,8 @@ function mobileSync(){
   $("mobileTrackMeta").textContent=t?(formatTime(t.duration)||"Local audio"):(phoneAudioActive?"Capturing phone audio":"Add music or use Phone Audio");
   $("mobileSource").textContent=phoneAudioActive?"PHONE AUDIO • SYSTEM CAPTURE":(t?"LOCAL AUDIO • PLAYLIST":"Demo mode");
   $("mobileMode").textContent=phoneAudioActive?"PHONE AUDIO":"VISUALIZER";
-  $("phoneAudioStatus").textContent=phoneAudioActive?"Capturing device audio":"Capture device audio";
+  $("phoneAudioStatus").textContent=phoneAudioActive?phoneAudioAppName:"Choose a source";
+  $("mobileChooseAudioBtn").textContent=phoneAudioActive?"Change audio app":"Choose audio app";
   $("mobilePhoneBtn").classList.toggle("active",phoneAudioActive);
   $("mobileFilesBtn").classList.toggle("active",!phoneAudioActive);
   $("mobilePlay").textContent=playing?"❚❚":"▶";
@@ -648,7 +660,7 @@ function mobileRenderPlaylist(){
     box.appendChild(row);
   });
 }
-async function startPhoneAudio(){
+async function startPhoneAudio(uid=-1, appName="All phone audio"){
   if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android"){
     mobileToast("Phone Audio needs the Android app (Android 10+).");
     return;
@@ -656,20 +668,50 @@ async function startPhoneAudio(){
   try{
     const plugin=Capacitor.Plugins.SystemAudioCapture;
     if(!plugin){mobileToast("Native audio capture is not installed in this build.");return}
-    await plugin.start();
+    await plugin.start({uid: Number.isFinite(uid)?uid:-1});
+    phoneAudioUid=Number.isFinite(uid)?uid:-1;
+    phoneAudioAppName=appName||"All phone audio";
     phoneAudioActive=true;
     audio.pause();
     audio.removeAttribute("src");
     audio.load();
     playing=true;
-    $("source").textContent="PHONE AUDIO • SYSTEM CAPTURE";
-    mobileToast("Choose Share/Allow to capture phone audio.");
+    $("source").textContent="PHONE AUDIO • "+phoneAudioAppName.toUpperCase();
+    mobileToast("Capturing: "+phoneAudioAppName);
+    $("mobileSheet").classList.remove("open");
     mobileSync();
   }catch(e){console.error(e);mobileToast("Phone Audio could not start.");}
 }
+function openAudioSourcePicker(){
+  const box=$("mobileTrackList");
+  $("sheetTitle").textContent="Choose audio source";
+  $("mobileSheet").classList.add("open");
+  box.innerHTML='<div class="mobile-track" id="captureAllAudio"><span class="mnum">◉</span><span class="mname">All phone audio</span><span class="mdur">System</span></div><div class="small" style="padding:10px 8px">Or choose one installed app. The app must allow Android playback capture.</div><div id="audioAppsLoading" class="small" style="padding:18px">Loading apps…</div>';
+  $("captureAllAudio").onclick=()=>startPhoneAudio(-1,"All phone audio");
+  const plugin=window.Capacitor?.Plugins?.SystemAudioCapture;
+  if(!plugin){$("audioAppsLoading").textContent="Android audio capture is not installed.";return;}
+  plugin.listApps().then(result=>{
+    const apps=Array.isArray(result?.apps)?result.apps:[];
+    const loading=$("audioAppsLoading");
+    if(loading) loading.remove();
+    if(!apps.length){box.insertAdjacentHTML("beforeend",'<div class="small" style="padding:18px">No launchable apps were found.</div>');return}
+    apps.forEach(app=>{
+      const row=document.createElement("div");
+      row.className="mobile-track";
+      row.innerHTML='<span class="mnum">◉</span><span class="mname"></span><span class="mdur">App</span>';
+      row.querySelector(".mname").textContent=app.label||app.package||"App";
+      row.onclick=()=>startPhoneAudio(Number(app.uid),app.label||app.package||"Selected app");
+      box.appendChild(row);
+    });
+  }).catch(e=>{
+    console.warn(e);
+    const loading=$("audioAppsLoading");
+    if(loading) loading.textContent="Could not load installed apps.";
+  });
+}
 async function stopPhoneAudio(){
   try{await Capacitor.Plugins.SystemAudioCapture?.stop()}catch(_){}
-  phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); playing=false; $("play").textContent="▶ Play"; mobileSync();
+  phoneAudioActive=false; phoneRms=0; phoneBands.fill(0); phoneAudioUid=-1; phoneAudioAppName="All phone audio"; playing=false; $("play").textContent="▶ Play"; mobileSync();
 }
 function setupMobileNativeAudio(){
   if(!window.Capacitor || !Capacitor.isNativePlatform || Capacitor.getPlatform()!=="android") return;
@@ -688,34 +730,40 @@ function setupMobileNativeAudio(){
   }catch(e){console.warn("SystemAudioCapture listener unavailable",e)}
 }
 $("mobileFilesBtn").onclick=()=>{stopPhoneAudio();$("files").click();};
-$("mobilePhoneBtn").onclick=()=>{if(phoneAudioActive)stopPhoneAudio();else startPhoneAudio();};
+$("mobilePhoneBtn").onclick=()=>{if(phoneAudioActive)stopPhoneAudio();else openAudioSourcePicker();};
+$("mobileChooseAudioBtn").onclick=()=>openAudioSourcePicker();
 $("mobilePlaylistBtn").onclick=()=>{$("mobileSheet").classList.add("open");$("sheetTitle").textContent="Music Playlist";mobileRenderPlaylist();};
 $("mobileSettingsBtn").onclick=()=>{const p=$("panel");p.classList.toggle("open");p.classList.toggle("mobile-settings-open");$("mobileSheet").classList.remove("open");};
 $("mobileCloseSheet").onclick=()=>$("mobileSheet").classList.remove("open");
-$("mobileDemoBtn").onclick=()=>{$("demoBtn").click();phoneAudioActive=false;mobileSync();mobileToast("Demo visualizer enabled");};
+$("mobileDemoBtn").onclick=()=>{$("demoBtn").click();phoneAudioActive=false;phoneAudioUid=-1;phoneAudioAppName="All phone audio";mobileSync();mobileToast("Demo visualizer enabled");};
 $("mobilePrev").onclick=()=>$("prev").click();
 $("mobileNext").onclick=()=>$("next").click();
 $("mobilePlay").onclick=()=>{$("play").click();setTimeout(mobileSync,80)};
+async function exitVisualizerOnly(){
+  document.body.classList.remove("visualizer-only");
+  try{if(document.fullscreenElement && document.exitFullscreen)await document.exitFullscreen()}catch(_){}
+}
 $("mobileFullBtn").onclick=async()=>{
-  const only=document.body.classList.toggle("visualizer-only");
+  const only=!document.body.classList.contains("visualizer-only");
   if(only){
+    document.body.classList.add("visualizer-only");
     try{
       if(document.documentElement.requestFullscreen && !document.fullscreenElement){
         await document.documentElement.requestFullscreen();
       }
     }catch(_){}
-    mobileToast("Visualizer fullscreen • tap Back to return");
-  }else{
-    try{if(document.fullscreenElement && document.exitFullscreen)await document.exitFullscreen()}catch(_){}
-  }
+    mobileToast("Visualizer only mode");
+  }else{await exitVisualizerOnly();}
 };
+$("visualizerExit").onclick=()=>exitVisualizerOnly();
 document.addEventListener("fullscreenchange",()=>{
-  if(!document.fullscreenElement && document.body.classList.contains("visualizer-only")){}
+  if(!document.fullscreenElement && document.body.classList.contains("visualizer-only")){
+    document.body.classList.remove("visualizer-only");
+  }
 });
 document.addEventListener("keydown",e=>{
   if((e.key==="Escape"||e.key==="Backspace") && document.body.classList.contains("visualizer-only")){
-    e.preventDefault(); document.body.classList.remove("visualizer-only");
-    try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}
+    e.preventDefault(); exitVisualizerOnly();
   }
 });
 $("mobileSeek").oninput=e=>{if(isFinite(audio.duration))audio.currentTime=+e.target.value};
