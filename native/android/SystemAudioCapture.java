@@ -124,16 +124,15 @@ public class SystemAudioCapture extends Plugin {
                 (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             projection = mgr.getMediaProjection(resultCode, data);
 
-            Integer selectedUid = call.getData().getInteger("uid", -1);
+            // Capture the device playback mix exposed by Android's public
+            // AudioPlaybackCapture API, rather than targeting one application.
+            // Android only exposes capturable app playback (MEDIA/GAME/UNKNOWN),
+            // not every system sound/phone-call/DRM stream.
             AudioPlaybackCaptureConfiguration.Builder captureBuilder =
-                new AudioPlaybackCaptureConfiguration.Builder(projection);
-            if (selectedUid != null && selectedUid > 0) {
-                captureBuilder.addMatchingUid(selectedUid);
-            } else {
-                captureBuilder
+                new AudioPlaybackCaptureConfiguration.Builder(projection)
                     .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
-                    .addMatchingUsage(AudioAttributes.USAGE_GAME);
-            }
+                    .addMatchingUsage(AudioAttributes.USAGE_GAME)
+                    .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN);
             AudioPlaybackCaptureConfiguration config = captureBuilder.build();
 
             int sampleRate = 48000;
