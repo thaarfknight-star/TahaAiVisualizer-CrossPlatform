@@ -1,0 +1,1 @@
+Use @capacitor/assets to generate Android/iOS launcher icons from the supplied www/icon.png when adding native platforms.
