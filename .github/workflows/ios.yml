@@ -1,0 +1,26 @@
+name: Build iOS Simulator
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - name: Build iOS Simulator app
+        working-directory: ios/App
+        run: xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      - name: Package app
+        run: ditto -c -k --sequesterRsrc --keepParent ios/App/build/Build/Products/Debug-iphonesimulator/App.app TahaAi-Visualizer-iOS-Simulator.zip
+      - uses: actions/upload-artifact@v6
+        with:
+          name: TahaAi-Visualizer-iOS-Simulator
+          path: TahaAi-Visualizer-iOS-Simulator.zip
