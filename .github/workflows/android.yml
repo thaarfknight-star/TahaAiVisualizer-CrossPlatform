@@ -21,14 +21,10 @@ jobs:
         shell: bash
         run: |
           set -e
-          PROJECT="$(find . -type f -name 'capacitor.config.ts' -o -type f -name 'capacitor.config.json' | head -n 1 | xargs -r dirname)"
-          if [ -z "$PROJECT" ] || [ "$PROJECT" = "." ]; then
-            if [ -f package.json ]; then
-              PROJECT="."
-            else
-              echo "Capacitor project not found."
-              exit 1
-            fi
+          PROJECT="$(find . -type f \( -name 'capacitor.config.ts' -o -name 'capacitor.config.json' \) -print -quit | xargs -r dirname)"
+          if [ -z "$PROJECT" ]; then
+            echo "Capacitor project not found."
+            exit 1
           fi
           echo "Project directory: $PROJECT"
           echo "dir=$PROJECT" >> "$GITHUB_OUTPUT"
@@ -47,6 +43,12 @@ jobs:
       - name: Install npm dependencies
         working-directory: ${{ steps.project.outputs.dir }}
         run: npm install --no-package-lock --legacy-peer-deps
+
+      - name: Verify Capacitor CLI and TypeScript
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: |
+          npx tsc --version
+          npx cap --version
 
       - name: Add Android platform
         working-directory: ${{ steps.project.outputs.dir }}
