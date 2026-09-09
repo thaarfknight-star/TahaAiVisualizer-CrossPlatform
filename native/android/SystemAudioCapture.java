@@ -207,11 +207,7 @@ public class SystemAudioCapture extends Plugin {
                     if (mag > peak) peak = mag;
                 }
                 double v = Math.min(1.0, Math.sqrt(peak) * 3.2);
-                try {
-                    arr.put(v);
-                } catch (org.json.JSONException ignored) {
-                    // Skip this band if the JSON array rejects the value.
-                }
+                arr.put(v);
             }
 
             double rms = Math.sqrt(sum / Math.max(1, read));
