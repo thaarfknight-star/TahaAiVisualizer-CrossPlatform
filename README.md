@@ -1,67 +1,44 @@
-# TahaAi Visualizer — One-ZIP Android Builder
+# TahaAi Visualizer — Android + iOS
 
-This repository is designed so you can upload the TahaAi Visualizer project ZIP and GitHub Actions will automatically:
+Cross-platform Capacitor wrapper around the existing HTML/CSS/JS visualizer.
 
-1. detect the ZIP
-2. extract it
-3. locate the Capacitor project
-4. install Node dependencies
-5. create the Android platform
-6. sync Capacitor
-7. build the APK
-8. publish the APK under GitHub Actions → Artifacts
+## GitHub
+1. Create a new GitHub repository.
+2. Upload everything in this folder.
+3. Ensure `.github/workflows/android.yml` and `ios.yml` are present.
+4. Open **Actions**.
 
-## First setup
+### Android
+`Build Android APK` runs on pushes to `main` and can also be started with **Run workflow**.
+After it finishes: open the workflow run → **Artifacts** → download `TahaAi-Visualizer-Android-debug`.
 
-Create a GitHub repository and upload this repository's `.github` folder and `README.md`.
+### iOS
+`Build iOS Simulator` is manually triggered. It creates an unsigned Simulator app for CI validation.
+A real iPhone/TestFlight/App Store build needs Apple signing credentials, certificates and provisioning profiles.
 
-Then upload your application ZIP to the **root of the GitHub repository**.
-
-For example:
-
-```text
-TahaAiVisualizer-Builder/
-├── .github/
-│   └── workflows/
-│       └── android-zip-builder.yml
-├── README.md
-└── TahaAiVisualizer-CrossPlatform-Enhanced-GitHub.zip
+## Local
+```bash
+npm install
+npx cap add android
+npx cap add ios
+npx cap sync
 ```
 
-As soon as the ZIP is pushed, the workflow starts automatically.
+## iOS: what you need
 
-## Important
+### Just build/test
+The GitHub iOS workflow builds an iOS Simulator app on a macOS runner. This is useful for CI, but it is **not an installable iPhone IPA**.
 
-The uploaded ZIP must contain the Capacitor project with:
+### Install on a real iPhone / TestFlight
+You need an Apple Developer account. A free Apple Account can be used for personal-device development through Xcode, but distribution through TestFlight/App Store requires Apple Developer Program membership. You will need to configure Apple signing credentials/secrets in GitHub Actions.
 
-```text
-package.json
-capacitor.config.ts
-www/
-```
+Recommended path:
+1. Join Apple Developer Program.
+2. Create an App ID for `com.tahdigi.visualizer`.
+3. Create the app record in App Store Connect.
+4. Configure signing/certificates for GitHub Actions.
+5. Build an archive on a macOS GitHub runner.
+6. Upload the signed build to App Store Connect.
+7. Install through TestFlight.
 
-The TahaAi Visualizer ZIP supplied with this project already has that structure.
-
-## Get the APK
-
-Open:
-
-**GitHub → Actions → Build Android from ZIP → latest run → Artifacts**
-
-Download:
-
-`TahaAi-Visualizer-Android`
-
-Inside it is:
-
-`app-debug.apk`
-
-## Rebuilding
-
-To build a new version, replace the ZIP in the repository with the new ZIP and commit/push it. The workflow will run again.
-
-You can also start it manually from **Actions → Build Android from ZIP → Run workflow**.
-
-## Note
-
-This workflow creates a debug APK for personal installation. It does not publish to Google Play and does not create a signed release APK.
+The web app now also exposes Media Session controls when the platform/WebView supports them: Play/Pause, Previous, Next, Seek Forward and Seek Backward. This improves lock-screen/headset controls, but true guaranteed background playback requires native iOS/Android audio-session/service handling and is not promised by a plain WebView.
