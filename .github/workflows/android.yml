@@ -61,7 +61,7 @@ jobs:
           fi
 
 
-      - name: Add Android audio capture permission
+      - name: Add Android audio capture permissions
         working-directory: ${{ steps.project.outputs.dir }}
         shell: bash
         run: |
@@ -70,6 +70,39 @@ jobs:
           if ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
             sed -i '/<manifest[^>]*>/a\    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
           fi
+          # Android 14+ requires a mediaProjection-type foreground service for
+          # MediaProjection audio capture: declare the permissions and the service.
+          python3 - <<'EOF'
+          import pathlib, re
+          p = pathlib.Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+
+          def ensure_permission(s, perm):
+              if perm in s:
+                  return s
+              tag = '<uses-permission android:name="%s" />' % perm
+              anchor = 'android.permission.RECORD_AUDIO" />'
+              if anchor in s:
+                  return s.replace(anchor, anchor + "\n    " + tag, 1)
+              m = re.search(r"<manifest[^>]*>", s)
+              if m:
+                  return s[:m.end()] + "\n    " + tag + s[m.end():]
+              return s
+
+          for perm in ("android.permission.FOREGROUND_SERVICE",
+                       "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"):
+              s = ensure_permission(s, perm)
+
+          if "AudioCaptureService" not in s:
+              svc = ('        <service android:name="com.tahdigi.visualizer.AudioCaptureService"\n'
+                     '            android:exported="false"\n'
+                     '            android:foregroundServiceType="mediaProjection" />\n')
+              assert "</application>" in s, "no </application> in AndroidManifest.xml"
+              s = s.replace("</application>", svc + "    </application>", 1)
+
+          p.write_text(s)
+          print("AndroidManifest patched for media projection foreground service")
+          EOF
 
       - name: Install Android native audio capture plugin
         working-directory: ${{ steps.project.outputs.dir }}
@@ -79,6 +112,7 @@ jobs:
           PKG_DIR="android/app/src/main/java/com/tahdigi/visualizer"
           mkdir -p "$PKG_DIR"
           cp native/android/SystemAudioCapture.java "$PKG_DIR/SystemAudioCapture.java"
+          cp native/android/AudioCaptureService.java "$PKG_DIR/AudioCaptureService.java"
           cp native/android/MainActivity.java "$PKG_DIR/MainActivity.java"
 
       - name: Apply app icon from www/icon.png
