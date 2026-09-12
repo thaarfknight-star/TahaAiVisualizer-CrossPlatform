@@ -18,9 +18,9 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.activity.result.ActivityResult;
 import androidx.core.content.ContextCompat;
 
-import com.getcapacitor.ActivityResult;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
