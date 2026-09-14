@@ -1,6 +1,7 @@
 name: Unzip and Build APK
 
 # با آپلود/آپدیت فایل زیپ، خودش اکسترکت و بیلد می‌کند
+# (بدون داکر؛ Buildozer مستقیم روی رانر نصب می‌شود)
 on:
   push:
     paths:
@@ -9,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,17 +25,34 @@ jobs:
           ls src
           test -f src/buildozer.spec || (echo "ERROR: buildozer.spec not found inside the zip" && exit 1)
 
-      - name: Build APK with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
         with:
-          command: buildozer android debug
-          workdir: src
-          buildozer_version: stable
+          path: ~/.buildozer
+          key: buildozer-global-${{ hashFiles('*.zip') }}
+          restore-keys: |
+            buildozer-global-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip \
+            autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
+            libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev automake
+
+      - name: Install Buildozer
+        run: |
+          pip3 install --upgrade pip
+          pip3 install "cython==0.29.33" buildozer
+          buildozer --version
+
+      - name: Build APK
+        working-directory: src
+        run: buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: TahaAiVisualizer-APK
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: src/bin/*.apk
           if-no-files-found: error
