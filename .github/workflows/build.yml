@@ -29,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-global-${{ hashFiles('*.zip') }}
+          key: buildozer-global-v2-${{ hashFiles('*.zip') }}
           restore-keys: |
-            buildozer-global-
+            buildozer-global-v2-
 
       - name: Install system dependencies
         run: |
@@ -45,6 +45,13 @@ jobs:
           pip3 install --upgrade pip
           pip3 install "cython==0.29.33" buildozer
           buildozer --version
+
+      - name: Pre-accept Android SDK licenses
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          printf '\n8933bad161af4178b1185d1a37fbf41ea5269c55' > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf '\n84831b9409646a918e30573bab4c9c91346d8' > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          ls ~/.buildozer/android/platform/android-sdk/licenses
 
       - name: Build APK
         working-directory: src
