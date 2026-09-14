@@ -33,6 +33,16 @@ jobs:
           restore-keys: |
             buildozer-global-v2-
 
+      - name: Verify Android SDK integrity
+        run: |
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          if [ -d "$SDK" ] && [ ! -f "$SDK/tools/bin/sdkmanager" ]; then
+            echo "Cached SDK is incomplete (no sdkmanager) -> removing for a clean re-download"
+            rm -rf "$SDK"
+          else
+            echo "SDK cache looks OK"
+          fi
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
