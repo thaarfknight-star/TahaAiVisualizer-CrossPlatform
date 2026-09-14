@@ -1,0 +1,40 @@
+name: Unzip and Build APK
+
+# با آپلود/آپدیت فایل زیپ، خودش اکسترکت و بیلد می‌کند
+on:
+  push:
+    paths:
+      - '*.zip'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract uploaded ZIP
+        run: |
+          ZIP_FILE=$(ls *.zip | head -n 1)
+          echo "Extracting: $ZIP_FILE"
+          rm -rf src
+          mkdir -p src
+          unzip -q -o "$ZIP_FILE" -d src
+          ls src
+          test -f src/buildozer.spec || (echo "ERROR: buildozer.spec not found inside the zip" && exit 1)
+
+      - name: Build APK with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          workdir: src
+          buildozer_version: stable
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TahaAiVisualizer-APK
+          path: ${{ steps.buildozer.outputs.filename }}
+          if-no-files-found: error
