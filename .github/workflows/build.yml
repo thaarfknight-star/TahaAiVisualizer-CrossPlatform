@@ -57,11 +57,19 @@ jobs:
           buildozer --version
 
       - name: Pre-accept Android SDK licenses
+        # فقط وقتی SDK واقعاً دانلود شده، فایل لایسنس می‌سازیم؛
+        # وگرنه خود buildozer دانلود می‌کند و android.accept_sdk_license جواب می‌دهد.
+        # (ساخت پوشه خالی قبل از buildozer باعث می‌شد دانلود SDK رد شود!)
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          printf '\n8933bad161af4178b1185d1a37fbf41ea5269c55' > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          printf '\n84831b9409646a918e30573bab4c9c91346d8' > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          ls ~/.buildozer/android/platform/android-sdk/licenses
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          if [ -d "$SDK/tools" ]; then
+            mkdir -p "$SDK/licenses"
+            printf '\n8933bad161af4178b1185d1a37fbf41ea5269c55' > "$SDK/licenses/android-sdk-license"
+            printf '\n84831b9409646a918e30573bab4c9c91346d8' > "$SDK/licenses/android-sdk-preview-license"
+            echo "licenses pre-accepted"
+          else
+            echo "No SDK downloaded yet; buildozer will download it now"
+          fi
 
       - name: Build APK
         working-directory: src
